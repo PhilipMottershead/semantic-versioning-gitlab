@@ -1,0 +1,47 @@
+stages:
+  - version
+  - generate-env-vars
+  - publish-image
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+
+version:
+  stage: version
+  image: python:3.11-slim-bookworm
+  script:
+    - apt-get -y upgrade
+    - apt-get -y update
+    - apt-get -y install git
+    - apt-get clean
+    - pip install -r requirements.txt
+    - python3 bump-version.py
+  only:
+   - main
+
+generate-env-vars:
+  stage: generate-env-vars
+  script:
+    - TAG=$(git describe --tags --always)
+    - echo "export TAG=$TAG" > .variables
+    - cat .variables
+  artifacts:
+    paths:
+    - .variables
+  only:
+   - main
+
+publish-image:
+  stage: publish-image
+  image: docker:18.06.1-ce
+  services:
+    - docker:dind
+  before_script:
+    - source .variables
+  script:
+    - docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_ACCESS_TOKEN $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$TAG -t $IMAGE_NAME:latest .
+    - docker push $IMAGE_NAME:$TAG
+    - docker push $IMAGE_NAME:latest
+  only:
+    - main
