@@ -50,8 +50,14 @@ Add the following variables:
 
 The pipeline configuration below will:
 1. Update the version for every build on the `main` branch.
-2. 
-3. Pushes th
+2. Adds the version as a artifact to be used in futher steps
+3. Pushes the
+
+To access to version number use following before script the tag will be saved in the `$TAG` enviroment varible.
+```
+before_script:
+    - source .variables
+```
 
 ```
 stages:
